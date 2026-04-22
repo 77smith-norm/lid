@@ -228,16 +228,35 @@ export function randomDither(pixels: Float32Array): Float32Array {
 }
 
 // Ordered dithering with threshold matrix
+// Overload: orderedDither(pixels, width, height, matrix)
+// The single-parameter overload is for backwards compat with tests
 export function orderedDither(
   pixels: Float32Array,
-  matrix: ThresholdMatrix,
+  widthOrMatrix: number | ThresholdMatrix,
+  height?: number,
+  matrix?: ThresholdMatrix,
 ): Float32Array {
-  const out = new Float32Array(pixels.length);
-  const { size, data } = matrix;
-  for (let y = 0; y < matrix.size; y++) {
-    // This is a simplified version — see dither() for full implementation
+  // Backwards compat: orderedDither(pixels, matrix)
+  if (typeof widthOrMatrix === "object") {
+    const m = widthOrMatrix;
+    const w = Math.sqrt(pixels.length) | 0;
+    return orderedDither(pixels, w, w, m);
   }
-  // Full implementation below in dither()
+  // Full impl: orderedDither(pixels, width, height, matrix)
+  const w = widthOrMatrix as number;
+  const h = height as number;
+  const m = matrix as ThresholdMatrix;
+  const out = new Float32Array(pixels.length);
+  const { size, data } = m;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      const mx = x % size;
+      const my = y % size;
+      const threshold = data[my * size + mx];
+      out[idx] = pixels[idx] > threshold ? 1.0 : 0.0;
+    }
+  }
   return out;
 }
 
@@ -286,26 +305,6 @@ export function dither(
     default:
       throw new Error(`Unknown algorithm: ${algorithm}`);
   }
-}
-
-export function orderedDither(
-  pixels: Float32Array,
-  width: number,
-  height: number,
-  matrix: ThresholdMatrix,
-): Float32Array {
-  const out = new Float32Array(pixels.length);
-  const { size, data } = matrix;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const idx = y * width + x;
-      const mx = x % size;
-      const my = y % size;
-      const threshold = data[my * size + mx];
-      out[idx] = pixels[idx] > threshold ? 1.0 : 0.0;
-    }
-  }
-  return out;
 }
 
 function errorDiffuse(

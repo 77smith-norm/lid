@@ -1,15 +1,49 @@
 {
   "name": "lid",
-  "module": "index.ts",
+  "version": "0.1.0",
+  "description": "Lo-fi Image Dithering — CLI tool and browser library for CSS-stylable black-and-white dithered images",
   "type": "module",
-  "private": true,
+  "main": "dist/lid.js",
+  "types": "dist/lid.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/lid.js",
+      "types": "./dist/lid.d.ts"
+    }
+  },
+  "bin": {
+    "lid": "./index.ts"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "dithering",
+    "image",
+    "dither",
+    "floyd-steinberg",
+    "bayer",
+    "atkinson",
+    "error-diffusion",
+    "ordered-dithering",
+    "lo-fi",
+    "pixel-art"
+  ],
+  "license": "MIT",
+  "author": "Russell Dillin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/77smith-norm/lid.git"
+  },
+  "homepage": "https://77smith-norm.github.io/lid",
   "devDependencies": {
-    "@types/bun": "latest"
+    "typescript": "^5.8.0",
+    "vite": "^7.0.0"
   },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
+  "optionalDependencies": {
     "pngjs": "^7.0.0"
   }
 }
