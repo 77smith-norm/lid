@@ -26,7 +26,10 @@ const result = dither(imageData, algorithms.FLOYD_STEINBERG);
 
 ## References
 
-- [Ditherpunk — Surma](https://surma.dev/things/ditherpunk/)
+- [Ditherpunk — Surma](https://surma.dev/things/ditherpunk/) — Gamma linearisation, ordered dithering
 - [Atkinson Dithering — Beyond Loom](https://beyondloom.com/blog/dither.html)
-- [Eleven Algorithms — Tanner Elland](https://tannerelland.com/2012/12/28/dithering-eleven-algorithms-source-code.html)
+- [Eleven Algorithms — Tanner Elland](https://tannerelland.com/2012/12/28/dithering-eleven-algorithms-source-code.html) — Source code for all 11 algorithms
 - [Dithering on the GPU — Alex Charlton](https://alex-charlton.com/posts/Dithering_on_the_GPU/)
+- [Dithering in Colour — Niklas Oberhuber](https://obrhubr.org/dithering-in-colour) — Colour palettes, linearisation pitfalls, Atkinson's 6/8 error diffusion issue
+- [didder — makew0rld](https://github.com/makew0rld/didder) — Colour dithering CLI with linearisation
+- [Dithering — John Novak](https://blog.johnnovak.net/2016/09/21/what-every-coder-should-know-about-gamma/) — Gamma explanation
