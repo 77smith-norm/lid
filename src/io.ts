@@ -6,6 +6,19 @@ import {
 } from "./dither.js";
 import { readPng, writePng } from "./png.js";
 
+// ─── Types ─────────────────────────────────────────────────────────────
+
+export interface CliResult {
+  success: boolean;
+  input: string;
+  output: string;
+  algorithm: string;
+  width: number;
+  height: number;
+  pixelCount: number;
+  elapsedMs: number;
+}
+
 // ─── Image I/O ───────────────────────────────────────────────────────
 
 export function loadImage(path: string): ImageData {
@@ -49,17 +62,28 @@ export function saveImage(
 
 // ─── CLI ─────────────────────────────────────────────────────────────
 
-export function parseArgs(argv: string[]): {
+export interface CliOptions {
   input: string;
   output: string;
   algorithm: Algorithm;
-} {
+  json: boolean;
+  dryRun: boolean;
+}
+
+export function parseArgs(argv: string[]): CliOptions {
   let input = "";
   let output = "";
   let algorithm = Algorithm.FLOYD_STEINBERG;
+  let json = false;
+  let dryRun = false;
 
   for (let i = 2; i < argv.length; i++) {
     switch (argv[i]) {
+      case "--help":
+      case "-h":
+        printHelp();
+        process.exit(0);
+        break;
       case "-o":
       case "--output":
         output = argv[++i];
@@ -79,14 +103,19 @@ export function parseArgs(argv: string[]): {
         algorithm = found;
         break;
       }
+      case "--json":
+        json = true;
+        break;
+      case "--dry-run":
+        dryRun = true;
+        break;
       default:
         if (!input) input = argv[i];
     }
   }
 
   if (!input) {
-    console.error("Usage: lid <input.png> [-o <output.png>] [-a <algorithm>]");
-    console.error(`Algorithms: ${ALGORITHM_NAMES.join(", ")}`);
+    printHelp();
     process.exit(1);
   }
 
@@ -95,20 +124,59 @@ export function parseArgs(argv: string[]): {
     output = `${ext}-dithered.png`;
   }
 
-  return { input, output, algorithm };
+  return { input, output, algorithm, json, dryRun };
 }
 
-export async function run(argv: string[]): Promise<void> {
-  const { input, output, algorithm } = parseArgs(argv);
+function printHelp(): void {
+  console.log("Usage: lid <input.png> [options]");
+  console.log("");
+  console.log("Options:");
+  console.log("  -o, --output <file>     Output file (default: <input>-dithered.png)");
+  console.log("  -a, --algorithm <name>  Dithering algorithm (default: floyd-steinberg)");
+  console.log(`  Available: ${ALGORITHM_NAMES.join(", ")}`);
+  console.log("      --json               Machine-parseable JSON output");
+  console.log("      --dry-run            Validate inputs without writing output");
+  console.log("  -h, --help               Show this help");
+}
 
-  console.log(`Loading: ${input}`);
+export async function run(argv: string[]): Promise<CliResult> {
+  const { input, output, algorithm, json, dryRun } = parseArgs(argv);
+
+  const start = performance.now();
+
   const img = loadImage(input);
-  console.log(`  ${img.width}×${img.height}, ${img.pixels.length} pixels`);
-
-  console.log(`Dithering with ${algorithm}...`);
   const result = dither(img.pixels, img.width, img.height, algorithm);
 
-  console.log(`Saving: ${output}`);
-  saveImage(result, img.width, img.height, output);
-  console.log("Done.");
+  if (!dryRun) {
+    saveImage(result, img.width, img.height, output);
+  }
+
+  const elapsed = performance.now() - start;
+
+  const cliResult: CliResult = {
+    success: true,
+    input,
+    output,
+    algorithm,
+    width: img.width,
+    height: img.height,
+    pixelCount: img.pixels.length,
+    elapsedMs: Math.round(elapsed),
+  };
+
+  if (json) {
+    console.log(JSON.stringify(cliResult, null, 2));
+  } else {
+    console.log(`Loading: ${input}`);
+    console.log(`  ${img.width}×${img.height}, ${img.pixels.length} pixels`);
+    console.log(`Dithering with ${algorithm}...`);
+    if (dryRun) {
+      console.log(`Dry run — output would be: ${output}`);
+    } else {
+      console.log(`Saving: ${output}`);
+    }
+    console.log(`Done in ${Math.round(elapsed)}ms.`);
+  }
+
+  return cliResult;
 }
