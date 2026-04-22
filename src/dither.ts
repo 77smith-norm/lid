@@ -288,7 +288,7 @@ export function dither(
   }
 }
 
-function orderedDither(
+export function orderedDither(
   pixels: Float32Array,
   width: number,
   height: number,
