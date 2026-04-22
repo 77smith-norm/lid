@@ -1,48 +1,46 @@
-# lid — Lo-fi Image Dithering
+# Lid — Lo-fi Image Dithering
 
-A TypeScript/Bun library and CLI for image dithering. Implements eleven dithering algorithms with gamma-correct sRGB processing.
+TypeScript dithering engine with CSS-styled color overlays.
 
-## Inspired by
+## Preview
 
-This project takes its name and spirit from [sloum's Lid](https://tildegit.org/sloum/lid) ([archive](https://web.archive.org/web/20230112195102/https://rawtext.club/~sloum/lid.html)), a Python/Pillow tool that inspired the whole aesthetic.
+![Norm dithered with cosmic purple overlay](Resources/norm_lid-fs.png)
 
-sloum's Lid was itself inspired by:
-- **Lowtech Magazine** — solar-powered web, single-color dithered images with CSS color filters that pass the color work to the client
-- **Shizaru** — a web server by the founder of Circumlunar Space that limits content to reduce web bloat (32k image max)
+```css
+.dither-overlay {
+  filter: grayscale(100%) brightness(1.1);
+  background: linear-gradient(135deg, #2d1b69 0%, #5b2187 25%, #8b3a8f 50%, #c77dba 75%, #e8b4d0 100%);
+  mix-blend-mode: color;
+}
+```
 
-The original Lid supported six modes: `t` (threshold), `r` (random), `o4` (ordered 4-level, default), `o9` (ordered 9-level), `e` (error diffusion), and `a` (all modes). A 140k original image could be reduced to 15–68k depending on mode, with CSS color effects adding zero bytes.
-
-That philosophy — old-web charm, reduced bloat, client-side color — is what this port carries forward.
+The black-and-white dithered image sits behind a gradient that flows from deep cosmic purple through violet into a lighter, more majestic pink. The CSS `mix-blend-mode: color` preserves the dither pattern while tinting it with the gradient — same approach as the original [sloum Lid](https://web.archive.org/web/20230112195102/https://rawtext.club/~sloum/lid.html).
 
 ## Algorithms
 
-- **Random** — White noise dithering
-- **Bayer** — Ordered dithering with Bayer matrices (levels 0–4)
-- **Floyd-Steinberg** — Classic error diffusion
-- **Atkinson** — Apple's variation, softer error spread
-- **Jarvis-Judice-Ninke** — Wider error diffusion pattern
-- **Stucki** — Optimized JJN variant
-- **Sierra** — 2-row and 3-row variants
-- **Burkes** — Lighter error diffusion
+- **Threshold** — simple brightness cutoff
+- **Ordered** — Bayer matrices (levels 0–4)
+- **Random** — uniform noise before quantize
+- **Floyd-Steinberg** — error diffusion, 4×3 mask
+- **Atkinson** — error diffusion, 3×5 mask
+- **Jarvis-Judice-Ninke** — error diffusion, 4×5 mask
+- **Stucki** — error diffusion, 4×4 mask
+- **Sierra 2-row** — error diffusion, 5×3 mask
+- **Sierra 3-row** — error diffusion, 5×4 mask
+- **Burkes** — error diffusion, 3×3 mask
 
 ## Usage
 
 ```bash
-# CLI
 bun run index.ts input.png -o output.png -a floyd-steinberg
-
-# Library
-import { dither, algorithms, BayerLevel } from "./src/index.js";
-const result = dither(imageData, algorithms.FLOYD_STEINBERG);
 ```
 
-## References
+## Inspired by
 
-- [Ditherpunk — Surma](https://surma.dev/things/ditherpunk/) — Gamma linearisation, ordered dithering
-- [Atkinson Dithering — Beyond Loom](https://beyondloom.com/blog/dither.html)
-- [Eleven Algorithms — Tanner Elland](https://tannerelland.com/2012/12/28/dithering-eleven-algorithms-source-code.html) — Source code for all 11 algorithms
-- [Dithering on the GPU — Alex Charlton](https://alex-charlton.com/posts/Dithering_on_the_GPU/)
-- [Writing My Own Dithering Algorithm in Racket — Amanvir Parhar](https://amanvir.com/blog/writing-my-own-dithering-algorithm-in-racket) — Error diffusion walkthrough, Atkinson's 6/8, custom algorithm design
-- [Dithering in Colour — Niklas Oberhuber](https://obrhubr.org/dithering-in-colour) — Colour palettes, linearisation pitfalls, Atkinson's 6/8 error diffusion issue
-- [didder — makew0rld](https://github.com/makew0rld/didder) — Colour dithering CLI with linearisation
-- [Dithering — John Novak](https://blog.johnnovak.net/2016/09/21/what-every-coder-should-know-about-gamma/) — Gamma explanation
+- [sloum's Lid](https://tildegit.org/sloum/lid) — original CSS-styled dithering tool
+- [Lowtech Magazine](https://lowtechmagazine.com) — aesthetic of digital minimalism
+- [Shizaru](https://shizaru.net) — server for lightweight web publishing
+
+## Resources
+
+Russell's original Swift playground that started it all: [Lid.playground](Resources/)
