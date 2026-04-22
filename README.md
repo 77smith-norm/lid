@@ -2,6 +2,18 @@
 
 A TypeScript/Bun library and CLI for image dithering. Implements eleven dithering algorithms with gamma-correct sRGB processing.
 
+## Inspired by
+
+This project takes its name and spirit from [sloum's Lid](https://tildegit.org/sloum/lid) ([archive](https://web.archive.org/web/20230112195102/https://rawtext.club/~sloum/lid.html)), a Python/Pillow tool that inspired the whole aesthetic.
+
+sloum's Lid was itself inspired by:
+- **Lowtech Magazine** — solar-powered web, single-color dithered images with CSS color filters that pass the color work to the client
+- **Shizaru** — a web server by the founder of Circumlunar Space that limits content to reduce web bloat (32k image max)
+
+The original Lid supported six modes: `t` (threshold), `r` (random), `o4` (ordered 4-level, default), `o9` (ordered 9-level), `e` (error diffusion), and `a` (all modes). A 140k original image could be reduced to 15–68k depending on mode, with CSS color effects adding zero bytes.
+
+That philosophy — old-web charm, reduced bloat, client-side color — is what this port carries forward.
+
 ## Algorithms
 
 - **Random** — White noise dithering
