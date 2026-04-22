@@ -1,5 +1,8 @@
 # Resources
 
+![Lid Xcode Playground](lid-xcode-playground.png)
+
+
 ## Lid.playground
 
 Russell's original Xcode Swift playground from ~2023, exploring the same dithering concept that inspired this project.
