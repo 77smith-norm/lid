@@ -40,6 +40,7 @@ bun run index.ts input.png -o output.png -a floyd-steinberg
 - [sloum's Lid](https://tildegit.org/sloum/lid) — original CSS-styled dithering tool
 - [Lowtech Magazine](https://lowtechmagazine.com) — aesthetic of digital minimalism
 - [Shizaru](https://shizaru.net) — server for lightweight web publishing
+- [Single-pass palette refinement and order dithering](https://30fps.net/pages/bayer-order-online-kmeans/) by Pekka Väänänen — Bayer-order pixel traversal for online k-means palette refinement
 
 ## Resources
 
