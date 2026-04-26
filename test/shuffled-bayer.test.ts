@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
+import { shuffledBayerOKM as exportedShuffledBayerOKM } from "../src/index.js";
 import {
   Algorithm,
   dither,
   maximinInit,
+  shuffledBayerOKM,
   shuffledBayerTraversal,
 } from "../src/dither.js";
 
@@ -52,6 +54,10 @@ describe("shuffledBayerTraversal", () => {
 });
 
 describe("shuffled Bayer dither", () => {
+  it("re-exports shuffledBayerOKM from the package entry", () => {
+    expect(exportedShuffledBayerOKM).toBe(shuffledBayerOKM);
+  });
+
   it("produces binary output for shuffled-bayer-2", () => {
     const pixels = makePixels(8, 8, (x) => x / 7);
     const result = dither(pixels, 8, 8, Algorithm.SHUFFLED_BAYER_2, { paletteSize: 4 });

@@ -20,6 +20,8 @@ The black-and-white dithered image sits behind a gradient that flows from deep c
 
 - **Threshold** — simple brightness cutoff
 - **Ordered** — Bayer matrices (levels 0–4)
+- **Shuffled Bayer 2x2** — online k-means palette refinement in 2x2 Bayer order
+- **Shuffled Bayer 4x4** — online k-means palette refinement in 4x4 Bayer order
 - **Random** — uniform noise before quantize
 - **Floyd-Steinberg** — error diffusion, 4×3 mask
 - **Atkinson** — error diffusion, 3×5 mask
@@ -33,6 +35,7 @@ The black-and-white dithered image sits behind a gradient that flows from deep c
 
 ```bash
 bun run index.ts input.png -o output.png -a floyd-steinberg
+bun run index.ts input.png -o output.png -a shuffled-bayer-2 --palette-size 16
 ```
 
 ## Inspired by
@@ -40,7 +43,7 @@ bun run index.ts input.png -o output.png -a floyd-steinberg
 - [sloum's Lid](https://tildegit.org/sloum/lid) — original CSS-styled dithering tool
 - [Lowtech Magazine](https://lowtechmagazine.com) — aesthetic of digital minimalism
 - [Shizaru](https://shizaru.net) — server for lightweight web publishing
-- [Single-pass palette refinement and order dithering](https://30fps.net/pages/bayer-order-online-kmeans/) by Pekka Väänänen — Bayer-order pixel traversal for online k-means palette refinement
+- [Single-pass palette refinement and order dithering](https://30fps.net/pages/bayer-order-online-kmeans/) by Pekka Väänänen — Bayer-order pixel traversal for online k-means palette refinement used by `shuffled-bayer-2` and `shuffled-bayer-4`
 
 ## Resources
 
