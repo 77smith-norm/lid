@@ -1,7 +1,7 @@
 {
   "name": "@77smith-norm/lid",
-  "version": "1.0.0",
-  "description": "Lo-fi Image Dithering — browser library with 13 algorithms for CSS-stylable black-and-white dithered images",
+  "version": "1.1.0",
+  "description": "Lo-fi Image Dithering — browser library with 15 algorithms for CSS-stylable black-and-white dithered images",
   "type": "module",
   "main": "dist/lid.js",
   "types": "dist/index.d.ts",
