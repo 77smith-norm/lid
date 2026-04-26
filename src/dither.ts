@@ -10,6 +10,8 @@ export enum Algorithm {
   BAYER_2 = "bayer-2",
   BAYER_3 = "bayer-3",
   BAYER_4 = "bayer-4",
+  SHUFFLED_BAYER_2 = "shuffled-bayer-2",
+  SHUFFLED_BAYER_4 = "shuffled-bayer-4",
   FLOYD_STEINBERG = "floyd-steinberg",
   ATKINSON = "atkinson",
   JARVIS_JUDICE_NINKE = "jarvis-judice-ninke",
@@ -39,9 +41,16 @@ export interface ThresholdMatrix {
   data: number[];
 }
 
+export interface DitherOptions {
+  paletteSize?: number;
+  seed?: number;
+}
+
 // ─── sRGB / Linear RGB ───────────────────────────────────────────────
 
 const GAMMA = 2.4;
+const DEFAULT_PALETTE_SIZE = 16;
+const DEFAULT_SHUFFLE_SEED = 42;
 
 export function srgbToLinear(c: number): number {
   return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, GAMMA);
@@ -218,6 +227,10 @@ function quantize(value: number): number {
   return value > 0.5 ? 1.0 : 0.0;
 }
 
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
 // Random dithering: add uniform noise [-0.5, 0.5] before quantizing
 export function randomDither(pixels: Float32Array): Float32Array {
   const out = new Float32Array(pixels.length);
@@ -260,12 +273,163 @@ export function orderedDither(
   return out;
 }
 
+function mulberry32(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleInPlace<T>(items: T[], random: () => number): void {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+}
+
+function bayerLevelForSize(matrixSize: 2 | 4): number {
+  return matrixSize === 2 ? 0 : 1;
+}
+
+export function maximinInit(pixels: Float32Array, paletteSize: number): Float32Array {
+  const size = Math.max(0, Math.floor(paletteSize));
+  if (pixels.length === 0 || size === 0) {
+    return new Float32Array(0);
+  }
+
+  const palette = new Float32Array(size);
+  palette[0] = pixels[0];
+
+  let filled = 1;
+  while (filled < size) {
+    let bestPixel = palette[filled - 1];
+    let bestDistance = -1;
+
+    for (let i = 0; i < pixels.length; i++) {
+      const pixel = pixels[i];
+      let nearestDistance = Infinity;
+
+      for (let j = 0; j < filled; j++) {
+        const distance = Math.abs(pixel - palette[j]);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+        }
+      }
+
+      if (nearestDistance > bestDistance) {
+        bestDistance = nearestDistance;
+        bestPixel = pixel;
+      }
+    }
+
+    palette[filled] = bestPixel;
+    filled++;
+
+    if (bestDistance === 0) {
+      while (filled < size) {
+        palette[filled] = bestPixel;
+        filled++;
+      }
+    }
+  }
+
+  return palette;
+}
+
+export function* shuffledBayerTraversal(
+  width: number,
+  height: number,
+  matrixSize: 2 | 4,
+  seed = DEFAULT_SHUFFLE_SEED,
+): Generator<[x: number, y: number]> {
+  const matrix = generateBayerMatrix(bayerLevelForSize(matrixSize));
+  const random = mulberry32(seed);
+  const cells = matrix.data
+    .map((value, index) => ({
+      value,
+      x: index % matrix.size,
+      y: Math.floor(index / matrix.size),
+    }))
+    .sort((a, b) => a.value - b.value);
+
+  for (const cell of cells) {
+    const pixels: [number, number][] = [];
+    for (let y = cell.y; y < height; y += matrix.size) {
+      for (let x = cell.x; x < width; x += matrix.size) {
+        pixels.push([x, y]);
+      }
+    }
+    shuffleInPlace(pixels, random);
+    for (const pixel of pixels) {
+      yield pixel;
+    }
+  }
+}
+
+function nearestPaletteIndex(value: number, palette: Float32Array): number {
+  let bestIndex = 0;
+  let bestDistance = Infinity;
+
+  for (let i = 0; i < palette.length; i++) {
+    const distance = Math.abs(value - palette[i]);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = i;
+    }
+  }
+
+  return bestIndex;
+}
+
+export function shuffledBayerOKM(
+  pixels: Float32Array,
+  width: number,
+  height: number,
+  paletteSize: number,
+  matrixSize: 2 | 4,
+  seed = DEFAULT_SHUFFLE_SEED,
+): Float32Array {
+  if (pixels.length === 0) {
+    return new Float32Array(0);
+  }
+
+  const srgbPixels = new Float32Array(pixels.length);
+  for (let i = 0; i < pixels.length; i++) {
+    srgbPixels[i] = linearToSrgb(clamp01(pixels[i]));
+  }
+
+  const palette = maximinInit(srgbPixels, paletteSize);
+  const assignments = new Uint16Array(pixels.length);
+
+  let pixelIndex = 0;
+  for (const [x, y] of shuffledBayerTraversal(width, height, matrixSize, seed)) {
+    const idx = y * width + x;
+    const nearest = nearestPaletteIndex(srgbPixels[idx], palette);
+    assignments[idx] = nearest;
+
+    const learningRate = 1 / (pixelIndex + 1);
+    palette[nearest] += learningRate * (srgbPixels[idx] - palette[nearest]);
+    pixelIndex++;
+  }
+
+  const out = new Float32Array(pixels.length);
+  for (let i = 0; i < assignments.length; i++) {
+    out[i] = quantize(srgbToLinear(clamp01(palette[assignments[i]])));
+  }
+  return out;
+}
+
 // Main dithering function
 export function dither(
   pixels: Float32Array,
   width: number,
   height: number,
   algorithm: Algorithm,
+  options: DitherOptions = {},
 ): Float32Array {
   switch (algorithm) {
     case Algorithm.RANDOM:
@@ -280,6 +444,26 @@ export function dither(
       const matrix = generateBayerMatrix(level);
       return orderedDither(pixels, width, height, matrix);
     }
+
+    case Algorithm.SHUFFLED_BAYER_2:
+      return shuffledBayerOKM(
+        pixels,
+        width,
+        height,
+        options.paletteSize ?? DEFAULT_PALETTE_SIZE,
+        2,
+        options.seed ?? DEFAULT_SHUFFLE_SEED,
+      );
+
+    case Algorithm.SHUFFLED_BAYER_4:
+      return shuffledBayerOKM(
+        pixels,
+        width,
+        height,
+        options.paletteSize ?? DEFAULT_PALETTE_SIZE,
+        4,
+        options.seed ?? DEFAULT_SHUFFLE_SEED,
+      );
 
     case Algorithm.FLOYD_STEINBERG:
       return errorDiffuse(pixels, width, height, FLOYD_STEINBERG_MASK);
