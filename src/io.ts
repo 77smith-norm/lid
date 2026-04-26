@@ -1,6 +1,7 @@
 import {
   Algorithm,
   ALGORITHM_NAMES,
+  DEFAULT_PALETTE_SIZE,
   dither,
   type ImageData,
 } from "./dither.js";
@@ -66,6 +67,7 @@ export interface CliOptions {
   input: string;
   output: string;
   algorithm: Algorithm;
+  paletteSize: number;
   json: boolean;
   dryRun: boolean;
 }
@@ -74,6 +76,7 @@ export function parseArgs(argv: string[]): CliOptions {
   let input = "";
   let output = "";
   let algorithm = Algorithm.FLOYD_STEINBERG;
+  let paletteSize = DEFAULT_PALETTE_SIZE;
   let json = false;
   let dryRun = false;
 
@@ -103,6 +106,15 @@ export function parseArgs(argv: string[]): CliOptions {
         algorithm = found;
         break;
       }
+      case "--palette-size": {
+        const value = Number.parseInt(argv[++i], 10);
+        if (!Number.isInteger(value) || value < 1) {
+          console.error("Palette size must be a positive integer.");
+          process.exit(1);
+        }
+        paletteSize = value;
+        break;
+      }
       case "--json":
         json = true;
         break;
@@ -124,7 +136,7 @@ export function parseArgs(argv: string[]): CliOptions {
     output = `${ext}-dithered.png`;
   }
 
-  return { input, output, algorithm, json, dryRun };
+  return { input, output, algorithm, paletteSize, json, dryRun };
 }
 
 function printHelp(): void {
@@ -133,6 +145,7 @@ function printHelp(): void {
   console.log("Options:");
   console.log("  -o, --output <file>     Output file (default: <input>-dithered.png)");
   console.log("  -a, --algorithm <name>  Dithering algorithm (default: floyd-steinberg)");
+  console.log(`      --palette-size <n>   Palette size for shuffled Bayer OKM (default: ${DEFAULT_PALETTE_SIZE})`);
   console.log(`  Available: ${ALGORITHM_NAMES.join(", ")}`);
   console.log("      --json               Machine-parseable JSON output");
   console.log("      --dry-run            Validate inputs without writing output");
@@ -140,12 +153,12 @@ function printHelp(): void {
 }
 
 export async function run(argv: string[]): Promise<CliResult> {
-  const { input, output, algorithm, json, dryRun } = parseArgs(argv);
+  const { input, output, algorithm, paletteSize, json, dryRun } = parseArgs(argv);
 
   const start = performance.now();
 
   const img = loadImage(input);
-  const result = dither(img.pixels, img.width, img.height, algorithm);
+  const result = dither(img.pixels, img.width, img.height, algorithm, { paletteSize });
 
   if (!dryRun) {
     saveImage(result, img.width, img.height, output);

@@ -49,8 +49,8 @@ export interface DitherOptions {
 // ─── sRGB / Linear RGB ───────────────────────────────────────────────
 
 const GAMMA = 2.4;
-const DEFAULT_PALETTE_SIZE = 16;
-const DEFAULT_SHUFFLE_SEED = 42;
+export const DEFAULT_PALETTE_SIZE = 16;
+export const DEFAULT_SHUFFLE_SEED = 42;
 
 export function srgbToLinear(c: number): number {
   return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, GAMMA);

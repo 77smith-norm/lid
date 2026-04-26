@@ -91,17 +91,29 @@ describe("parseArgs: flags", () => {
     expect(opts.dryRun).toBe(true);
   });
 
+  it("defaults palette size to 16", () => {
+    const opts = parseArgs(["node", "index.ts", input]);
+    expect(opts.paletteSize).toBe(16);
+  });
+
+  it("parses --palette-size", () => {
+    const opts = parseArgs(["node", "index.ts", input, "--palette-size", "8"]);
+    expect(opts.paletteSize).toBe(8);
+  });
+
   it("combines all flags", () => {
     const opts = parseArgs([
       "node", "index.ts", input,
       "-o", "out.png",
       "-a", "bayer-2",
+      "--palette-size", "8",
       "--json",
       "--dry-run",
     ]);
     expect(opts.input).toBe(input);
     expect(opts.output).toBe("out.png");
     expect(opts.algorithm).toBe(Algorithm.BAYER_2);
+    expect(opts.paletteSize).toBe(8);
     expect(opts.json).toBe(true);
     expect(opts.dryRun).toBe(true);
   });
@@ -117,6 +129,17 @@ describe("parseArgs: flags", () => {
     process.exit = (() => { exited = true; }) as never;
     try {
       parseArgs(["node", "index.ts", input, "-a", "bogus"]);
+    } catch { /* ignore */ }
+    process.exit = originalExit;
+    expect(exited).toBe(true);
+  });
+
+  it("rejects invalid palette size", () => {
+    let exited = false;
+    const originalExit = process.exit;
+    process.exit = (() => { exited = true; }) as never;
+    try {
+      parseArgs(["node", "index.ts", input, "--palette-size", "0"]);
     } catch { /* ignore */ }
     process.exit = originalExit;
     expect(exited).toBe(true);
